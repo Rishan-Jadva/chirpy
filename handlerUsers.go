@@ -33,7 +33,7 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, 201, respUser{
+	respondWithJSON(w, http.StatusCreated, respUser{
 		ID:         user.ID,
 		Created_At: user.CreatedAt,
 		Updated_At: user.UpdatedAt,
