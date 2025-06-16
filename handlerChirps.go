@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -77,6 +79,33 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, response)
+}
+
+func (cfg *apiConfig) handlerGetChirpByID(w http.ResponseWriter, r *http.Request) {
+	chirpIDstr := r.PathValue("chirpID")
+
+	chirpID, err := uuid.Parse(chirpIDstr)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID format", err)
+		return
+	}
+
+	chirp, err := cfg.db.GetChirpByID(r.Context(), chirpID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "Chirp not found", nil)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Couldn't get chirp by ID", err)
+	}
+
+	respondWithJSON(w, http.StatusOK, returnChirp{
+		ID:         chirp.ID,
+		Created_At: chirp.CreatedAt,
+		Updated_At: chirp.UpdatedAt,
+		Body:       chirp.Body,
+		User_ID:    chirp.UserID,
+	})
 }
 
 func cleanWords(body string) string {
