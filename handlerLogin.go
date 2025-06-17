@@ -6,21 +6,22 @@ import (
 	"time"
 
 	"github.com/Rishan-Jadva/chirpy/internal/auth"
+	"github.com/Rishan-Jadva/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
 type parameters struct {
-	Password         string `json:"password"`
-	Email            string `json:"email"`
-	ExpiresInSeconds int    `json:"expires_in_seconds,omitempty"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
 type respLogin struct {
-	ID         uuid.UUID `json:"id"`
-	Created_At time.Time `json:"created_at"`
-	Updated_At time.Time `json:"updated_at"`
-	Email      string    `json:"email"`
-	Token      string    `json:"token"`
+	ID            uuid.UUID `json:"id"`
+	Created_At    time.Time `json:"created_at"`
+	Updated_At    time.Time `json:"updated_at"`
+	Email         string    `json:"email"`
+	Token         string    `json:"token"`
+	Refresh_Token string    `json:"refresh_token"`
 }
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
@@ -44,22 +45,34 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	duration := time.Hour
-	if params.ExpiresInSeconds > 0 && params.ExpiresInSeconds <= 3600 {
-		duration = time.Duration(params.ExpiresInSeconds) * time.Second
+	accessToken, err := auth.MakeJWT(user.ID, cfg.JWTSecret, time.Hour)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create access token", err)
+		return
 	}
 
-	token, err := auth.MakeJWT(user.ID, cfg.JWTSecret, duration)
+	refreshToken, err := auth.MakeRefreshToken()
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not create token", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create refresh token", err)
+		return
+	}
+
+	_, err = cfg.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refreshToken,
+		UserID:    user.ID,
+		ExpiresAt: time.Now().UTC().Add(time.Hour * 24 * 60),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't add refresh token to db", err)
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, respLogin{
-		ID:         user.ID,
-		Created_At: user.CreatedAt,
-		Updated_At: user.UpdatedAt,
-		Email:      user.Email,
-		Token:      token,
+		ID:            user.ID,
+		Created_At:    user.CreatedAt,
+		Updated_At:    user.UpdatedAt,
+		Email:         user.Email,
+		Token:         accessToken,
+		Refresh_Token: refreshToken,
 	})
 }
