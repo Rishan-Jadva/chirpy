@@ -17,6 +17,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	JWTSecret      string
+	PolkaKey       string
 }
 
 func main() {
@@ -39,11 +40,13 @@ func main() {
 
 	platform := os.Getenv("PLATFORM")
 	JWTSecret := os.Getenv("JWT_SECRET")
+	PolkaKey := os.Getenv("POLKA_KEY")
 
 	apiCfg := apiConfig{
 		db:        dbQueries,
 		platform:  platform,
 		JWTSecret: JWTSecret,
+		PolkaKey:  PolkaKey,
 	}
 
 	mux := http.NewServeMux()
