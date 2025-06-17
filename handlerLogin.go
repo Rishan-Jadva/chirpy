@@ -20,6 +20,7 @@ type respLogin struct {
 	Created_At    time.Time `json:"created_at"`
 	Updated_At    time.Time `json:"updated_at"`
 	Email         string    `json:"email"`
+	IsChirpyRed   bool      `json:"is_chirpy_red"`
 	Token         string    `json:"token"`
 	Refresh_Token string    `json:"refresh_token"`
 }
@@ -72,6 +73,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		Created_At:    user.CreatedAt,
 		Updated_At:    user.UpdatedAt,
 		Email:         user.Email,
+		IsChirpyRed:   user.IsChirpyRed,
 		Token:         accessToken,
 		Refresh_Token: refreshToken,
 	})
